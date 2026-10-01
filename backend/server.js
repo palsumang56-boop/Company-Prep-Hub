@@ -59,17 +59,16 @@ app.get('/api/questions', async (req, res) => {
   try {
     const { search } = req.query;
     let query = {};
-    // Matches the collation on the Question model's indexes, so the indexes are used.
-    const collationSettings = { locale: 'en', strength: 2 };
-
     if (search) {
-      const searchRegex = new RegExp(`^${escapeRegex(String(search))}`);
+      // $regex ignores collation, so case-insensitivity comes from the 'i' flag.
+      // User input is escaped so characters like "C++" or "(" can't break the pattern.
+      const searchRegex = new RegExp(`^${escapeRegex(String(search))}`, 'i');
       query = {
         $or: [{ title: { $regex: searchRegex } }, { companies: { $in: [searchRegex] } }],
       };
     }
 
-    const questions = await Question.find(query).collation(collationSettings);
+    const questions = await Question.find(query);
     res.status(200).json(questions);
   } catch (error) {
     console.error('Error fetching questions:', error);

@@ -186,7 +186,7 @@ test('invalid input is rejected before calling the AI', async () => {
   assert.equal((await chat({ message: 'x'.repeat(2001) })).status, 400);
 });
 
-test('existing question search no longer crashes on regex characters', async () => {
+test('question search is case-insensitive and safe with regex characters', async () => {
   const Question = require('../Models/Questions');
   let captured;
   const original = Question.find;
@@ -198,6 +198,7 @@ test('existing question search no longer crashes on regex characters', async () 
   Question.find = original;
   assert.equal(res.status, 200);
   assert.equal(captured.$or[0].title.$regex.source, '^C\\+\\+ \\(hard');
+  assert.equal(captured.$or[0].title.$regex.flags, 'i', 'search is case-insensitive');
 });
 
 test('user JSON never includes the password hash', () => {
