@@ -103,7 +103,8 @@ const Login = ({ handleIsLoggedIn }) => {
           </p>
         </form>
 
-        {/* Google Login Component */}
+        {/* Google Login Component (shown only when a Google client ID is configured) */}
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
         <div className="google-login-wrapper">
           <GoogleLogin
             theme="filled_black"
@@ -120,6 +121,7 @@ const Login = ({ handleIsLoggedIn }) => {
             }}
           />
         </div>
+        )}
 
       </div>
 

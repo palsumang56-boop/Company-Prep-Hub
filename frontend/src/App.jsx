@@ -5,7 +5,11 @@ import MobileNavbar from "./components/MobileNavbar";
 import Footer from "./components/Footer";
 import Sidebar from "./components/Sidebar";
 import About from "./components/About";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
+
+// Hosts without an SPA rewrite rule (e.g. a Render static site) set VITE_HASH_ROUTER=true,
+// so deep links like /#/question/123 still work after a page refresh.
+const Router = import.meta.env.VITE_HASH_ROUTER === "true" ? HashRouter : BrowserRouter;
 import { useState, useRef, useEffect } from "react"; 
 import QuestionDetail from "./components/QuestionDetail";
 
