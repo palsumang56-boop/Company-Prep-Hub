@@ -10,7 +10,10 @@ const Sidebar = React.forwardRef(({ isOpen, toggleSidebar, isLoggedIn }, ref) =>
   const companies = [
     "Visa", "Media.net", "Deutsche Bank", "Microsoft", "BNY Mellon", "Salesforce",
     "Cisco", "UnifyApps", "Google", "Amazon", "Wells Fargo", 
-    "Intuit", "MasterCard", "UiPath", "JLR"
+    "Intuit", "MasterCard", "UiPath", "JLR",
+    "Adobe", "Goldman Sachs", "Flipkart", "Uber", "Atlassian",
+    "Oracle", "Walmart", "PhonePe", "Zomato", "Morgan Stanley",
+    "JPMorgan Chase", "Qualcomm", "Samsung", "DE Shaw", "Arcesium"
   ];
 
   const handleSidebarClick = () => {

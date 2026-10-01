@@ -7,7 +7,7 @@ const Question = require('./Models/Questions');
 const aiRoutes = require('./routes/ai');
 const indexer = require('./rag/indexer');
 const gemini = require('./rag/gemini');
-const { seedIfEmpty } = require('./data/seed');
+const { seedIfOnlySamples } = require('./data/seed');
 
 const app = express();
 app.set('trust proxy', 1); // Render/Vercel sit behind a proxy; needed for per-IP rate limiting
@@ -130,13 +130,13 @@ app.post('/api/questions/add', async (req, res) => {
 
 app.use('/api/ai', aiRoutes);
 
-// Shortly after startup: load sample questions into an empty database, then embed any
-// new or changed questions, so the site and the AI are ready without a manual step.
+// Shortly after startup: load any missing sample questions (only while the database holds no real
+// questions), then embed any new or changed questions, so the site and the AI are ready without a manual step.
 db.once('connected', () => {
   setTimeout(async () => {
     try {
-      const added = await seedIfEmpty();
-      if (added) console.log(`[seed] Database was empty: added ${added} sample questions`);
+      const added = await seedIfOnlySamples();
+      if (added) console.log(`[seed] added ${added} sample questions`);
     } catch (err) {
       console.error('[seed] failed:', err.message);
     }

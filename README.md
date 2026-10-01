@@ -117,7 +117,7 @@ To embed everything manually: `cd backend && npm run index` (add `-- --force` to
 
 ### Sample data
 
-If the `questions` collection is empty when the server starts, it loads 30 sample OA-style questions (classic problems written for this project, tagged with the companies in the sidebar) so the site and PrepPilot work immediately. They are never added to a database that already has questions.
+When the server starts with no real questions in the `questions` collection, it loads 60 sample OA-style questions (classic problems written for this project, tagged with the 30 companies in the sidebar, 4 to 9 per company) so the site and PrepPilot work immediately. Samples added to `backend/data/sampleQuestions.js` later are picked up on the next start. As soon as the database holds any question that isn't a sample, automatic seeding stops, so samples are never mixed into real data.
 
 - Add the samples manually: `npm run seed`
 - Remove them once you have real questions: `npm run seed -- --remove`
@@ -139,7 +139,7 @@ Tests: `cd backend && npm test`
 | `GEMINI_EMBED_MODEL` / `GEMINI_EMBED_DIMS` | no | Default `gemini-embedding-001` / `768` |
 | `AI_RATE_LIMIT` | no | AI requests per IP per 15 minutes (default 30) |
 | `AUTO_INDEX` | no | `false` to skip embedding on startup |
-| `SEED_SAMPLE_DATA` | no | `false` to skip loading sample questions into an empty database |
+| `SEED_SAMPLE_DATA` | no | `false` to skip loading sample questions on startup |
 
 **Frontend** (`frontend/.env` or Vercel)
 
