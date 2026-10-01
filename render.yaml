@@ -1,0 +1,21 @@
+# Render Blueprint: deploys the Express + RAG backend.
+# One-click: https://render.com/deploy?repo=https://github.com/palsumang56-boop/Company-Prep-Hub
+services:
+  - type: web
+    name: company-prep-hub-api
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: MONGODB_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ADMIN_KEY
+        generateValue: true
