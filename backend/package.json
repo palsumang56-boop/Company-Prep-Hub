@@ -6,6 +6,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "index": "node scripts/index.js",
+    "seed": "node scripts/seed.js",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [],

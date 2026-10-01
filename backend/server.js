@@ -7,6 +7,7 @@ const Question = require('./Models/Questions');
 const aiRoutes = require('./routes/ai');
 const indexer = require('./rag/indexer');
 const gemini = require('./rag/gemini');
+const { seedIfEmpty } = require('./data/seed');
 
 const app = express();
 app.set('trust proxy', 1); // Render/Vercel sit behind a proxy; needed for per-IP rate limiting
@@ -130,14 +131,22 @@ app.post('/api/questions/add', async (req, res) => {
 
 app.use('/api/ai', aiRoutes);
 
-// Embed any new or changed questions shortly after startup, so the AI is ready without a manual step.
+// Shortly after startup: load sample questions into an empty database, then embed any
+// new or changed questions, so the site and the AI are ready without a manual step.
 db.once('connected', () => {
-  if (!gemini.isConfigured() || process.env.AUTO_INDEX === 'false') return;
-  setTimeout(() => {
-    indexer
-      .indexAll()
-      .then((stats) => console.log('[rag] index sync complete:', stats))
-      .catch((err) => console.error('[rag] index sync failed:', err.message));
+  setTimeout(async () => {
+    try {
+      const added = await seedIfEmpty();
+      if (added) console.log(`[seed] Database was empty: added ${added} sample questions`);
+    } catch (err) {
+      console.error('[seed] failed:', err.message);
+    }
+    if (!gemini.isConfigured() || process.env.AUTO_INDEX === 'false') return;
+    try {
+      console.log('[rag] index sync complete:', await indexer.indexAll());
+    } catch (err) {
+      console.error('[rag] index sync failed:', err.message);
+    }
   }, 2000);
 });
 

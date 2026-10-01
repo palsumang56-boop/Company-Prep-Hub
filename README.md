@@ -5,7 +5,7 @@ A MERN platform that collects real online-assessment (OA) and interview question
 **Live:** frontend on Vercel, API on Render (links below once deployed)
 
 - Frontend: _add your Vercel URL here_
-- API: _add your Render URL here_ (`/api/health` shows status)
+- API: https://company-prep-hub-api.onrender.com ([health check](https://company-prep-hub-api.onrender.com/api/health))
 
 ---
 
@@ -71,6 +71,8 @@ backend/
   rag/                 chunker, gemini client, indexer, vectorStore, retriever, prompts, rateLimit
   Models/              Question, User, KnowledgeChunk
   scripts/index.js     CLI: embed all questions
+  scripts/seed.js      CLI: add or remove sample questions
+  data/                sample questions and seeding
   tests/               node:test suite (mocked Gemini + in-memory DB)
 frontend/
   src/components/ai/   PrepPilot UI: AIAssistant, PrepCoach, ChatPanel, Markdown, useChat
@@ -113,6 +115,14 @@ npm run dev               # http://localhost:5173
 
 To embed everything manually: `cd backend && npm run index` (add `-- --force` to re-embed all).
 
+### Sample data
+
+If the `questions` collection is empty when the server starts, it loads 30 sample OA-style questions (classic problems written for this project, tagged with the companies in the sidebar) so the site and PrepPilot work immediately. They are never added to a database that already has questions.
+
+- Add the samples manually: `npm run seed`
+- Remove them once you have real questions: `npm run seed -- --remove`
+- Turn off automatic seeding: set `SEED_SAMPLE_DATA=false`
+
 Tests: `cd backend && npm test`
 
 ### Environment variables
@@ -129,6 +139,7 @@ Tests: `cd backend && npm test`
 | `GEMINI_EMBED_MODEL` / `GEMINI_EMBED_DIMS` | no | Default `gemini-embedding-001` / `768` |
 | `AI_RATE_LIMIT` | no | AI requests per IP per 15 minutes (default 30) |
 | `AUTO_INDEX` | no | `false` to skip embedding on startup |
+| `SEED_SAMPLE_DATA` | no | `false` to skip loading sample questions into an empty database |
 
 **Frontend** (`frontend/.env` or Vercel)
 
