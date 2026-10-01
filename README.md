@@ -2,9 +2,9 @@
 
 A MERN platform that collects real online-assessment (OA) and interview questions by company, with **PrepPilot**, an AI interview coach built on a **RAG (retrieval-augmented generation) pipeline**. PrepPilot answers questions like *"What does Amazon ask in their OA?"* using the actual question bank, cites the questions it used, and coaches you on a specific problem with hints, full solutions, likely follow-ups, or a mock interview.
 
-**Live:** frontend on Vercel, API on Render (links below once deployed)
+**Live demo**
 
-- Frontend: _add your Vercel URL here_
+- Website: https://company-prep-hub.onrender.com
 - API: https://company-prep-hub-api.onrender.com ([health check](https://company-prep-hub-api.onrender.com/api/health))
 
 ---
@@ -158,6 +158,10 @@ Tests: `cd backend && npm test`
 4. Once live, `https://<service>.onrender.com/api/health` should show `"db":"connected","ai":true`. Questions are embedded automatically on first start.
 
 The free plan sleeps after 15 minutes of inactivity, so the first request after a pause takes up to a minute. The UI shows a notice while it wakes.
+
+### Frontend on Render (static site)
+
+Build command `cd frontend && npm ci && npm run build`, publish directory `frontend/dist`, and environment variables `VITE_API_URL` and `VITE_HASH_ROUTER=true`. Hash routing keeps deep links working after a refresh; alternatively, add a Rewrite rule `/*` → `/index.html` in the site's Redirects/Rewrites settings and drop `VITE_HASH_ROUTER`.
 
 ### Frontend on Vercel
 
