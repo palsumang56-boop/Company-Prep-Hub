@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import axios from "axios";
+import { API_URL } from "../config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, Link } from "react-router-dom";
@@ -20,7 +21,7 @@ const Login = ({ handleIsLoggedIn }) => {
     
     try {
       const response = await axios.post(
-        "https://ooooo-two.vercel.app/api/login",
+        `${API_URL}/api/login`,
         data
       );
       console.log(response);

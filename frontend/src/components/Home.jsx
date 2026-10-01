@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "../config";
 import "./Home.css"; 
 import { FaCode, FaLaptopCode, FaBuilding, FaRocket, FaExternalLinkAlt } from "react-icons/fa"; 
 // Optional: Import toast if you want a nice popup, otherwise we use alert
@@ -26,7 +27,7 @@ const Home = ({ toggleSidebar, isLoggedIn }) => {
       setError(null);
       try {
         const response = await axios.get(
-          `https://ooooo-two.vercel.app/api/questions?search=${searchQuery}`
+          `${API_URL}/api/questions?search=${encodeURIComponent(searchQuery)}`
         );
         setQuestions(response.data);
       } catch (err) {

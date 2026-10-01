@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'; // 1. Added useNavigate here
 import axios from 'axios';
+import { API_URL } from '../config';
 import '../App.css'; 
 import { FaArrowLeft } from 'react-icons/fa';
+import PrepCoach from './ai/PrepCoach';
 
 const QuestionDetail = () => {
   const { id } = useParams();
@@ -17,7 +19,7 @@ const QuestionDetail = () => {
       try {
         setLoading(true);
         // Ensure this matches your actual API endpoint for a SINGLE question
-        const response = await axios.get(`https://ooooo-two.vercel.app/api/questions/${id}`);
+        const response = await axios.get(`${API_URL}/api/questions/${id}`);
         setQuestion(response.data);
       } catch (err) {
         console.error("Error fetching question:", err);
@@ -147,6 +149,8 @@ const QuestionDetail = () => {
             )}
 
         </div>
+
+        <PrepCoach key={question._id} question={question} />
 
       </div>
     </div>

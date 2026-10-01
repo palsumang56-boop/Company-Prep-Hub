@@ -1,6 +1,7 @@
 import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 import { useRef } from "react";
 import axios from "axios";
+import { API_URL } from "../config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +43,7 @@ function Register() {
     };
     try {
       const response = await axios.post(
-        "https://ooooo-two.vercel.app/api/signup",
+        `${API_URL}/api/signup`,
         data
       );
       console.log(response);

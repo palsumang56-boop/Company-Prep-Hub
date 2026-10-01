@@ -13,6 +13,7 @@ import Home from "./components/Home";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import TopicPage from "./components/TopicPage";
+import AIAssistant from "./components/ai/AIAssistant";
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -88,6 +89,7 @@ function App() {
         </div>
 
         <Footer />
+        <AIAssistant />
       </div>
     </Router>
   );

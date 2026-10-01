@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"; // To get "Microsoft" from URL
+import { API_URL } from "../config";
 
 const TopicPage = () => {
   // 1. Get the company name from the URL (e.g., "Microsoft")
@@ -18,7 +19,7 @@ const TopicPage = () => {
         
         // REPLACE THIS URL with your actual backend endpoint
         // Example: http://localhost:5000/api/questions/company/Microsoft
-        const response = await fetch(`https://ooooo-two.vercel.app/api/questions/company/${topicName}`);
+        const response = await fetch(`${API_URL}/api/questions/company/${encodeURIComponent(topicName)}`);
         
         if (!response.ok) {
           throw new Error("Failed to fetch questions");
