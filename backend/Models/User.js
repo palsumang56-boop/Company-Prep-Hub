@@ -14,9 +14,17 @@ const userSchema = new mongoose.Schema({
     minlength: 8,  
   },
 }, {
-  timestamps: true 
+  timestamps: true,
+  // Never send the password hash back in API responses
+  toJSON: {
+    transform: (doc, ret) => {
+      delete ret.password;
+      return ret;
+    },
+  },
 });
 userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });

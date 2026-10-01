@@ -1,185 +1,150 @@
-const express=require('express');
-const db=require('./db');
-const app=express();
-const cors=require('cors');
-const bodyParser=require('body-parser');
-app.use(bodyParser.json());
-app.use(cors());
 require('dotenv').config();
-const User =require('./Models/User');
+const express = require('express');
+const cors = require('cors');
+const db = require('./db');
+const User = require('./Models/User');
 const Question = require('./Models/Questions');
-app.post('/api/signup',async (req,res)=>{
-  try{
-    const data=req.body;
-    const newUser=new User(data);
-    const response=await newUser.save();
-    console.log('data saved');
-     res.status(200).json(response);
+const aiRoutes = require('./routes/ai');
+const indexer = require('./rag/indexer');
+const gemini = require('./rag/gemini');
+
+const app = express();
+app.set('trust proxy', 1); // Render/Vercel sit behind a proxy; needed for per-IP rate limiting
+
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : undefined));
+app.use(express.json({ limit: '200kb' }));
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+app.get('/', (req, res) => res.json({ name: 'Company Prep Hub API', status: 'ok' }));
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', db: db.readyState === 1 ? 'connected' : 'disconnected', ai: gemini.isConfigured() });
+});
+
+app.post('/api/signup', async (req, res) => {
+  try {
+    const newUser = new User(req.body);
+    const response = await newUser.save();
+    res.status(200).json(response);
+  } catch (error) {
+    console.log(error);
+    if (error.code === 11000) return res.status(409).json({ error: 'An account with this email already exists' });
+    if (error.name === 'ValidationError') return res.status(400).json({ error: error.message });
+    res.status(500).json({ error: 'internal server error' });
   }
-  catch(error){
-     console.log(error);
-     res.status(500).json({error:'internal server error'});
-  }
-})
+});
 
+app.post('/api/login', async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+    const user = await User.findOne({ emailId: String(emailId || '').toLowerCase() });
 
-app.post('/api/login',async (req,res)=>{
-  try{
-    const {emailId, password} = req.body;
-    const user = await User.findOne({emailId: emailId});
-
-
-    if( !user || !(await user.isPasswordCorrect(password, user.password))){
-        return res.status(401).json({error: 'Invalid username or password'});
+    if (!user || !(await user.isPasswordCorrect(password, user.password))) {
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
-    console.log('logged in');
     res.status(200).json(user);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'internal server error' });
   }
-  catch(error){
-    console.log(err);
-    res.status(500).json({err:'internal server error'});
-  }
-})
+});
 
-// In your controller file (e.g., questionsController.js)
-
-
-// A. POST METHOD: To add a new question to the database
-// Endpoint: POST http://localhost:4000/api/questions/add
+// GET /api/questions?search=amazon  (prefix search on title or company, case-insensitive)
 app.get('/api/questions', async (req, res) => {
-    try {
-        const { search } = req.query; 
+  try {
+    const { search } = req.query;
+    let query = {};
+    // Matches the collation on the Question model's indexes, so the indexes are used.
+    const collationSettings = { locale: 'en', strength: 2 };
 
-        let query = {};
-        
-        // Define the collation settings to match your Model
-        const collationSettings = { locale: 'en', strength: 2 };
-
-        if (search) {
-            // OPTIMIZATION:
-            // 1. We use '^' to anchor the search to the start (Prefix Search).
-            // 2. We REMOVE the 'i' flag. The Collation handles case-insensitivity.
-            // 3. This allows MongoDB to use the B-Tree Index for O(log n) lookup.
-            const searchRegex = new RegExp(`^${search}`); 
-
-            query = {
-                $or: [
-                    { title: { $regex: searchRegex } },
-                    { companies: { $in: [searchRegex] } } 
-                ]
-            };
-        }
-
-        // We chain .collation() so MongoDB knows to use the case-insensitive index
-        const questions = await Question.find(query)
-                                        .collation(collationSettings);
-        
-        res.status(200).json(questions);
-
-    } catch (error) {
-        console.error("Error fetching questions:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+    if (search) {
+      const searchRegex = new RegExp(`^${escapeRegex(String(search))}`);
+      query = {
+        $or: [{ title: { $regex: searchRegex } }, { companies: { $in: [searchRegex] } }],
+      };
     }
+
+    const questions = await Question.find(query).collation(collationSettings);
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
 });
+
+app.get('/api/questions/company/:companyName', async (req, res) => {
+  try {
+    const questions = await Question.find({ companies: req.params.companyName }).collation({ locale: 'en', strength: 2 });
+    if (questions.length === 0) {
+      return res.status(404).json({ success: false, message: `No questions found for company: ${req.params.companyName}` });
+    }
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    res.status(500).json({ success: false, message: 'Server Error while fetching data' });
+  }
+});
+
 app.get('/api/questions/:id', async (req, res) => {
-    try {
-        const question = await Question.findById(req.params.id);
-        if (question) {
-            res.status(200).json(question);
-        } else {
-            res.status(404).json({ message: "Question not found" });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
-    }
+  try {
+    const question = await Question.findById(req.params.id);
+    if (question) res.status(200).json(question);
+    else res.status(404).json({ message: 'Question not found' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
 });
+
 app.post('/api/questions/add', async (req, res) => {
   try {
-    const { 
-      title, 
-      companies, 
-      difficulty, 
-      problemStatement, 
-      inputFormat, 
-      outputFormat, 
-      constraints, 
-      examples,
-      topicTags 
-    } = req.body;
+    const { title, companies, difficulty, problemStatement, inputFormat, outputFormat, constraints, examples, topicTags } =
+      req.body;
 
-    // Create new question instance
-    const newQuestion = new Question({
+    const savedQuestion = await new Question({
       title,
-      companies, // Expecting array like ["BNY Mellon", "Amazon"]
+      companies, // e.g. ["BNY Mellon", "Amazon"]
       difficulty,
       problemStatement,
       inputFormat,
       outputFormat,
       constraints,
       examples,
-      topicTags
-    });
+      topicTags,
+    }).save();
 
-    // Save to database
-    const savedQuestion = await newQuestion.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Question added successfully!",
-      data: savedQuestion
-    });
-
-  } catch (error) {
-    console.error("Error adding question:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server Error while adding question",
-      error: error.message 
-    });
-  }
-});
-
-// B. GET METHOD: To find questions by Company Name
-// Endpoint: GET http://localhost:5000/api/questions/company/BNY%20Mellon
-app.get('/api/questions/company/:companyName', async (req, res) => {
-  try {
-    const companyName = req.params.companyName;
-
-    // "THE MAGIC QUERY"
-    // MongoDB treats { companies: "Value" } as "Find any doc where companies array CONTAINS Value"
-    const questions = await Question.find({ 
-      companies: companyName 
-    });
-
-    if (questions.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: `No questions found for company: ${companyName}` 
-      });
+    // Make the new question searchable by the AI assistant (runs in the background).
+    if (gemini.isConfigured()) {
+      indexer.indexQuestion(savedQuestion._id).catch((err) => console.error('[rag] indexing new question failed:', err.message));
     }
 
-    res.status(200).json(questions);
-
+    res.status(201).json({ success: true, message: 'Question added successfully!', data: savedQuestion });
   } catch (error) {
-    console.error("Error fetching questions:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server Error while fetching data" 
-    });
+    console.error('Error adding question:', error);
+    res.status(500).json({ success: false, message: 'Server Error while adding question', error: error.message });
   }
 });
 
-// C. GET ALL (Optional: To check DB health)
-app.get('/api/questions', async (req, res) => {
-    const questions = await Question.find({});
-    res.json(questions);
+app.use('/api/ai', aiRoutes);
+
+// Embed any new or changed questions shortly after startup, so the AI is ready without a manual step.
+db.once('connected', () => {
+  if (!gemini.isConfigured() || process.env.AUTO_INDEX === 'false') return;
+  setTimeout(() => {
+    indexer
+      .indexAll()
+      .then((stats) => console.log('[rag] index sync complete:', stats))
+      .catch((err) => console.error('[rag] index sync failed:', err.message));
+  }, 2000);
 });
-const port=process.env.PORT;
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(port, () => {
-        console.log(`Server is running locally on port ${port}`);
-    });
+
+const port = process.env.PORT || 4000;
+// On Vercel the app is exported as a serverless function; everywhere else (Render, local) it listens.
+if (!process.env.VERCEL) {
+  app.listen(port, () => console.log(`Server is running on port ${port}`));
 }
 
-// Export the app so Vercel can run it as a serverless function
 module.exports = app;
