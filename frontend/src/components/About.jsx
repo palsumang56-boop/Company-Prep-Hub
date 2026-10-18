@@ -66,11 +66,8 @@ const About = () => {
           <p>Have questions or feedback? We'd love to hear from you.</p>
           
           <div className="contact-cards">
-            <a href="mailto:sharmayanit@gmail.com" className="contact-link">
-              <FaEnvelope /> sharmayanit@gmail.com
-            </a>
-            <a href="mailto:vivekdiwakar6000@gmail.com" className="contact-link">
-              <FaEnvelope /> vivekdiwakar6000@gmail.com
+            <a href="mailto:palsumang56@gmail.com" className="contact-link">
+              <FaEnvelope /> palsumang56@gmail.com
             </a>
           </div>
         </div>

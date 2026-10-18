@@ -93,7 +93,7 @@ function Register() {
                 <input 
                   type="email"
                   className="form-control"
-                  placeholder="yanit@gmail.com"
+                  placeholder="sumang@example.com"
                   id="email"
                   ref={userID}
                   required
