@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../App.css';
-import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaLinkedinIn, FaGithub, FaTwitter } from 'react-icons/fa';
+import { FaEnvelope, FaMapMarkerAlt, FaLinkedinIn, FaGithub, FaTwitter } from 'react-icons/fa';
 
 const Footer = () => {
   return (
@@ -36,12 +36,7 @@ const Footer = () => {
             
             <div className="contact-item">
               <FaEnvelope className="contact-icon" />
-              <span>sharmayanit@gmail.com</span>
-            </div>
-            
-            <div className="contact-item">
-              <FaPhoneAlt className="contact-icon" />
-              <span>+91 9352084018</span>
+              <span>palsumang56@gmail.com</span>
             </div>
 
             <div className="contact-item">
