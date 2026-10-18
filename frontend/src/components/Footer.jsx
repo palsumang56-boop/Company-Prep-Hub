@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../App.css';
-import { FaEnvelope, FaMapMarkerAlt, FaLinkedinIn, FaGithub, FaTwitter } from 'react-icons/fa';
+import { FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 
 const Footer = () => {
   return (
@@ -42,13 +42,6 @@ const Footer = () => {
             <div className="contact-item">
               <FaMapMarkerAlt className="contact-icon" />
               <span>IIT BHU, Varanasi, India</span>
-            </div>
-
-            {/* Social Media Icons */}
-            <div className="social-icons">
-              <a href="#" className="social-btn"><FaLinkedinIn /></a>
-              <a href="#" className="social-btn"><FaGithub /></a>
-              <a href="#" className="social-btn"><FaTwitter /></a>
             </div>
           </div>
 
