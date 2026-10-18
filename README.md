@@ -11,7 +11,7 @@ A MERN platform that collects real online-assessment (OA) and interview question
 
 ## Features
 
-- **Question bank by company**: search by title or company, browse by company, view full problem statements with constraints and examples.
+- **Question bank by company**: every company is listed on the home page with its question count; search by title or company, and view full problem statements with constraints and examples.
 - **PrepPilot AI coach** (site-wide): ask about companies, topics or study plans. Answers are grounded in retrieved questions and cite them inline (`[1]`, `[2]`), linking straight to the question.
 - **Question-aware coaching** (on every question page):
   - *Give me a hint*: progressive hints that never reveal the full answer
@@ -89,6 +89,7 @@ render.yaml            Render Blueprint for the backend
 | GET | `/api/questions?search=` | All questions, or prefix search on title/company |
 | GET | `/api/questions/:id` | One question |
 | GET | `/api/questions/company/:name` | Questions for a company |
+| GET | `/api/companies` | Every company with its question count, A to Z, plus the total number of questions |
 | POST | `/api/questions/add` | Add a question (embedded automatically) |
 | POST | `/api/signup`, `/api/login` | Auth |
 | GET | `/api/ai/status` | Whether AI is configured, index size, search mode, top companies |
@@ -117,10 +118,10 @@ To embed everything manually: `cd backend && npm run index` (add `-- --force` to
 
 ### Sample data
 
-When the server starts with no real questions in the `questions` collection, it loads 60 sample OA-style questions (classic problems written for this project, tagged with the 30 companies in the sidebar, 4 to 9 per company) so the site and PrepPilot work immediately. Samples added to `backend/data/sampleQuestions.js` later are picked up on the next start. As soon as the database holds any question that isn't a sample, automatic seeding stops, so samples are never mixed into real data.
+On every start, the server adds any of the 60 sample OA-style questions (classic problems written for this project, tagged with the 30 companies in the sidebar, 4 to 9 per company) that aren't in the database yet, so every company has questions and PrepPilot works immediately. Samples are matched by title and only inserted when missing: existing questions, including your own, are never changed. Samples added to `backend/data/sampleQuestions.js` later are picked up on the next start.
 
 - Add the samples manually: `npm run seed`
-- Remove them once you have real questions: `npm run seed -- --remove`
+- Remove them once you have real questions: `npm run seed -- --remove`, then set `SEED_SAMPLE_DATA=false` so they aren't added back on the next start
 - Turn off automatic seeding: set `SEED_SAMPLE_DATA=false`
 
 Tests: `cd backend && npm test`
@@ -139,7 +140,7 @@ Tests: `cd backend && npm test`
 | `GEMINI_EMBED_MODEL` / `GEMINI_EMBED_DIMS` | no | Default `gemini-embedding-001` / `768` |
 | `AI_RATE_LIMIT` | no | AI requests per IP per 15 minutes (default 30) |
 | `AUTO_INDEX` | no | `false` to skip embedding on startup |
-| `SEED_SAMPLE_DATA` | no | `false` to skip loading sample questions on startup |
+| `SEED_SAMPLE_DATA` | no | `false` to stop adding missing sample questions on startup |
 
 **Frontend** (`frontend/.env` or Vercel)
 

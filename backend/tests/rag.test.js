@@ -208,3 +208,54 @@ test('user JSON never includes the password hash', () => {
   assert.equal(json.password, undefined);
   assert.equal(json.emailId, 'a@b.com');
 });
+
+test('companies endpoint lists every company once, A to Z, with its question count', async () => {
+  const res = await fetch(`${base}/api/companies`);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.totalQuestions, 3);
+  assert.deepEqual(body.companies, [
+    { name: 'Amazon', count: 2 },
+    { name: 'BNY Mellon', count: 1 },
+    { name: 'Google', count: 1 },
+    { name: 'Microsoft', count: 1 },
+  ]);
+});
+
+test('startup seeding adds missing sample questions and never overwrites existing ones', async () => {
+  const Question = require('../Models/Questions');
+  const { seedMissingSamples, count } = require('../data/seed');
+  const original = Question.bulkWrite;
+  let ops;
+  try {
+    Question.bulkWrite = async (o) => {
+      ops = o;
+      return { upsertedCount: o.length };
+    };
+    assert.equal(await seedMissingSamples(), count);
+    assert.ok(
+      ops.every((op) => op.updateOne.upsert && op.updateOne.filter.title && op.updateOne.update.$setOnInsert),
+      'samples are inserted only when their title is missing'
+    );
+
+    // One clashing title fails the bulk write, but the other inserts still count.
+    Question.bulkWrite = async () => {
+      const err = new Error('E11000 duplicate key');
+      err.result = { upsertedCount: count - 1 };
+      throw err;
+    };
+    assert.equal(await seedMissingSamples(), count - 1);
+
+    process.env.SEED_SAMPLE_DATA = 'false';
+    ops = undefined;
+    Question.bulkWrite = async (o) => {
+      ops = o;
+      return { upsertedCount: o.length };
+    };
+    assert.equal(await seedMissingSamples(), 0);
+    assert.equal(ops, undefined, 'SEED_SAMPLE_DATA=false skips seeding');
+  } finally {
+    Question.bulkWrite = original;
+    delete process.env.SEED_SAMPLE_DATA;
+  }
+});

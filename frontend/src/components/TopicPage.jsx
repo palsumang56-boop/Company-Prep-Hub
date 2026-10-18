@@ -20,7 +20,12 @@ const TopicPage = () => {
         // REPLACE THIS URL with your actual backend endpoint
         // Example: http://localhost:5000/api/questions/company/Microsoft
         const response = await fetch(`${API_URL}/api/questions/company/${encodeURIComponent(topicName)}`);
-        
+
+        // 404 means this company simply has no questions yet: show the empty state, not an error.
+        if (response.status === 404) {
+          setQuestions([]);
+          return;
+        }
         if (!response.ok) {
           throw new Error("Failed to fetch questions");
         }

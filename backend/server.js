@@ -7,7 +7,7 @@ const Question = require('./Models/Questions');
 const aiRoutes = require('./routes/ai');
 const indexer = require('./rag/indexer');
 const gemini = require('./rag/gemini');
-const { seedIfOnlySamples } = require('./data/seed');
+const { seedMissingSamples } = require('./data/seed');
 
 const app = express();
 app.set('trust proxy', 1); // Render/Vercel sit behind a proxy; needed for per-IP rate limiting
@@ -76,6 +76,26 @@ app.get('/api/questions', async (req, res) => {
   }
 });
 
+// GET /api/companies -> every company in the question bank with its question count, A to Z.
+// Names that differ only in case ("amazon" / "Amazon") are counted as one company.
+app.get('/api/companies', async (req, res) => {
+  try {
+    const [rows, totalQuestions] = await Promise.all([
+      Question.aggregate([
+        { $unwind: '$companies' },
+        { $match: { companies: { $type: 'string', $ne: '' } } },
+        { $group: { _id: { $toLower: '$companies' }, name: { $first: '$companies' }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+      Question.estimatedDocumentCount(),
+    ]);
+    res.status(200).json({ totalQuestions, companies: rows.map(({ name, count }) => ({ name, count })) });
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    res.status(500).json({ message: 'Server Error while fetching companies' });
+  }
+});
+
 app.get('/api/questions/company/:companyName', async (req, res) => {
   try {
     const questions = await Question.find({ companies: req.params.companyName }).collation({ locale: 'en', strength: 2 });
@@ -130,12 +150,12 @@ app.post('/api/questions/add', async (req, res) => {
 
 app.use('/api/ai', aiRoutes);
 
-// Shortly after startup: load any missing sample questions (only while the database holds no real
-// questions), then embed any new or changed questions, so the site and the AI are ready without a manual step.
+// Shortly after startup: load any missing sample questions, then embed any new or changed questions,
+// so every company has questions and the AI is ready without a manual step.
 db.once('connected', () => {
   setTimeout(async () => {
     try {
-      const added = await seedIfOnlySamples();
+      const added = await seedMissingSamples();
       if (added) console.log(`[seed] added ${added} sample questions`);
     } catch (err) {
       console.error('[seed] failed:', err.message);

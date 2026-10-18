@@ -18,18 +18,43 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import TopicPage from "./components/TopicPage";
 import AIAssistant from "./components/ai/AIAssistant";
+// Remembers that the user logged in, so a page refresh doesn't log them out.
+// Storage can be unavailable (e.g. some private windows); the app then just forgets on refresh.
+const LOGIN_KEY = "cph_logged_in";
+const readLoggedIn = () => {
+  try {
+    return localStorage.getItem(LOGIN_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+const saveLoggedIn = (value) => {
+  try {
+    if (value) localStorage.setItem(LOGIN_KEY, "true");
+    else localStorage.removeItem(LOGIN_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+};
+
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(readLoggedIn);
   const sidebarRef = useRef(null);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  
   const handleIsLoggedIn = () => {
+    saveLoggedIn(true);
     setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    saveLoggedIn(false);
+    setIsLoggedIn(false);
+    setIsSidebarOpen(false);
   };
 
   
@@ -48,7 +73,7 @@ function App() {
   return (
     <Router>
       <div className="app-wrapper">
-        <Navbar toggleSidebar={toggleSidebar} isLoggedIn={isLoggedIn} isSidebarOpen={isSidebarOpen}/>
+        <Navbar toggleSidebar={toggleSidebar} isLoggedIn={isLoggedIn} isSidebarOpen={isSidebarOpen} onLogout={handleLogout}/>
 
         <Sidebar ref={sidebarRef}
           isOpen={isSidebarOpen}
