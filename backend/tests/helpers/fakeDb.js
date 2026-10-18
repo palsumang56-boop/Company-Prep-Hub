@@ -68,13 +68,27 @@ function install({ Question, KnowledgeChunk }) {
   Question.findById = (id) => query(() => store.questions.find((q) => String(q._id) === String(id)) || null);
   Question.distinct = async (field) => [...new Set(store.questions.flatMap((q) => q[field] || []))];
   Question.estimatedDocumentCount = async () => store.questions.length;
-  Question.aggregate = async () => {
-    const counts = {};
-    store.questions.forEach((q) => (q.companies || []).forEach((c) => (counts[c] = (counts[c] || 0) + 1)));
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([_id, count]) => ({ _id, count }));
+  // Supports the two company pipelines the app runs: $unwind companies, $group (optionally by
+  // lowercased name with a display name), then $sort by count or by _id, and an optional $limit.
+  Question.aggregate = async (pipeline = []) => {
+    const group = pipeline.find((s) => s.$group)?.$group || {};
+    const byLowercase = Boolean(group._id && typeof group._id === 'object' && '$toLower' in group._id);
+    const counts = new Map();
+    store.questions.forEach((q) =>
+      (q.companies || []).forEach((c) => {
+        const key = byLowercase ? c.toLowerCase() : c;
+        const row = counts.get(key) || { _id: key, name: c, count: 0 };
+        row.count += 1;
+        counts.set(key, row);
+      })
+    );
+    let rows = [...counts.values()];
+    const sort = pipeline.find((s) => s.$sort)?.$sort || {};
+    if (sort.count) rows.sort((a, b) => sort.count * (a.count - b.count));
+    else rows.sort((a, b) => String(a._id).localeCompare(String(b._id)));
+    const limit = pipeline.find((s) => s.$limit)?.$limit;
+    if (limit) rows = rows.slice(0, limit);
+    return rows.map(({ name, ...row }) => (group.name ? { ...row, name } : row));
   };
 
   KnowledgeChunk.find = (filter = {}) =>

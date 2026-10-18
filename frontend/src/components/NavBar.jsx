@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "../App.css"; // Ensure this path is correct for your project
 import { Link, useNavigate } from "react-router-dom";
 
-const Navbar = ({ toggleSidebar, isLoggedIn, isSidebarOpen }) => {
+const Navbar = ({ toggleSidebar, isLoggedIn, isSidebarOpen, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState(""); // State for search input
   const navigate = useNavigate(); // Hook for navigation
 
@@ -78,13 +78,26 @@ const Navbar = ({ toggleSidebar, isLoggedIn, isSidebarOpen }) => {
           {/* RIGHT SIDE: Login & Search (Grouped for spacing) */}
           <div className="right-actions d-flex align-items-center">
             
-            <Link 
-              className="btn custom-login-btn me-3" 
-              to="/login" 
-              onClick={handleClick}
-            >
-              Login
-            </Link>
+            {isLoggedIn ? (
+              <button
+                type="button"
+                className="btn custom-login-btn me-3"
+                onClick={() => {
+                  onLogout?.();
+                  navigate("/");
+                }}
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                className="btn custom-login-btn me-3"
+                to="/login"
+                onClick={handleClick}
+              >
+                Login
+              </Link>
+            )}
 
             {/* SEARCH FORM - Now functional */}
             <form className="d-flex search-form" role="search" onSubmit={handleSearch}>

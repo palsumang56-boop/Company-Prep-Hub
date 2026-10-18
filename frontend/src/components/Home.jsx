@@ -12,6 +12,11 @@ const Home = ({ toggleSidebar, isLoggedIn }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Every company in the question bank, with question counts, for the landing page.
+  const [catalog, setCatalog] = useState(null); // { totalQuestions, companies: [{ name, count }] }
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
+
   // Hooks for URL handling
   const location = useLocation();
   const navigate = useNavigate();
@@ -40,6 +45,26 @@ const Home = ({ toggleSidebar, isLoggedIn }) => {
 
     fetchQuestions();
   }, [searchQuery]);
+
+  // Load the company list once for the landing page (again only if the user presses Retry).
+  useEffect(() => {
+    if (searchQuery || catalog) return undefined;
+    let alive = true;
+    axios
+      .get(`${API_URL}/api/companies`)
+      .then((res) => alive && setCatalog(res.data))
+      .catch((err) => {
+        console.error("Error fetching companies:", err);
+        if (alive) setCatalogError(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [searchQuery, catalog, catalogAttempt]);
+
+  const scrollToCompanies = () => {
+    document.getElementById("companies")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // --- HELPER: Handle clicking a Company Tag ---
   const handleCompanyClick = (companyName) => {
@@ -78,7 +103,7 @@ const Home = ({ toggleSidebar, isLoggedIn }) => {
           {!loading && !error && questions.length === 0 && (
             <div className="text-center py-5">
               <h3>No questions found.</h3>
-              <p className="text-muted">Try searching for "Google", "Arrays", or "Easy".</p>
+              <p className="text-muted">Search matches the start of a company name or question title, like &ldquo;Amazon&rdquo; or &ldquo;Two Sum&rdquo;.</p>
             </div>
           )}
 
@@ -139,10 +164,15 @@ const Home = ({ toggleSidebar, isLoggedIn }) => {
           <p className="hero-subtitle">Curated questions from top tech giants.</p>
           <div className="hero-buttons">
              {!isLoggedIn ? (
-               <Link to="/login" className="btn-primary hero-btn">Login to Practice</Link>
+               <>
+                 <Link to="/login" className="btn-primary hero-btn">Login to Practice</Link>
+                 <button type="button" onClick={scrollToCompanies} className="btn-secondary hero-btn">
+                   Browse Companies
+                 </button>
+               </>
              ) : (
-               <button onClick={() => handleCompanyClick("Google")} className="btn-primary hero-btn">
-                 Practice Google Questions
+               <button type="button" onClick={scrollToCompanies} className="btn-primary hero-btn">
+                 Browse Companies
                </button>
              )}
           </div>
@@ -156,21 +186,63 @@ const Home = ({ toggleSidebar, isLoggedIn }) => {
         </div>
       </section>
 
-      {/* Stats Strip */}
+      {/* Stats Strip: live counts from the question bank */}
       <div className="stats-strip">
         <div className="stat-item">
-          <h2>500+</h2>
+          <h2>{catalog ? catalog.totalQuestions : "–"}</h2>
           <p>Questions</p>
         </div>
         <div className="stat-item">
-          <h2>15+</h2>
+          <h2>{catalog ? catalog.companies.length : "–"}</h2>
           <p>Companies</p>
         </div>
         <div className="stat-item">
-          <h2>100+</h2>
-          <p>Users</p>
+          <h2>4</h2>
+          <p>AI Coach Modes</p>
         </div>
       </div>
+
+      {/* Every company in the question bank */}
+      <section className="companies-section" id="companies">
+        <h2 className="section-title">Browse by Company</h2>
+        <p className="section-subtitle">Pick a company to see every question in its online assessment.</p>
+
+        {!catalog && !catalogError && <p className="companies-status">Loading companies...</p>}
+        {catalogError && (
+          <p className="companies-status">
+            Could not load companies. The server may be waking up, so try again in a minute.{" "}
+            <button
+              type="button"
+              className="retry-link"
+              onClick={() => {
+                setCatalogError(false);
+                setCatalogAttempt((n) => n + 1);
+              }}
+            >
+              Retry
+            </button>
+          </p>
+        )}
+        {catalog && catalog.companies.length === 0 && (
+          <p className="companies-status">No questions have been added yet.</p>
+        )}
+
+        {catalog && catalog.companies.length > 0 && (
+          <div className="company-grid">
+            {catalog.companies.map(({ name, count }) => (
+              <Link key={name} to={`/topic/${encodeURIComponent(name)}`} className="company-card">
+                <FaBuilding className="company-icon" aria-hidden="true" />
+                <span>
+                  <span className="company-name">{name}</span>
+                  <span className="company-count">
+                    {count} {count === 1 ? "question" : "questions"}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
        {/* Features */}
        <section className="features-section">
